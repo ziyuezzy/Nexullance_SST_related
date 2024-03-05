@@ -1,0 +1,5 @@
+__pycache__/
+.vscode/
+DDF36/
+pickled_data/*.pickle
+pickled_data/*
