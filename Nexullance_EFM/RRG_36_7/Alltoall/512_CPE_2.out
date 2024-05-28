@@ -1,0 +1,12 @@
+Running ECMP_ASP
+Alltoall: ranks 1152, loop 1, bytes 512, latency 2592.912 us
+Simulation is complete, simulated time: 2.5938 ms
+Running UGAL_ASP
+Alltoall: ranks 1152, loop 1, bytes 512, latency 2374.613 us
+Simulation is complete, simulated time: 2.38265 ms
+Running Nexu_MP_APST4
+Alltoall: ranks 1152, loop 1, bytes 512, latency 2548.516 us
+Simulation is complete, simulated time: 2.55586 ms
+Running Nexu_MP_MMR
+Alltoall: ranks 1152, loop 1, bytes 512, latency 2324.028 us
+Simulation is complete, simulated time: 2.33074 ms

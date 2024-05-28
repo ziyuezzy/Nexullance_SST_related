@@ -8,14 +8,15 @@ Make sure you have installed the sst-core and sst-element (from_graph fork)
 
 <!-- TODOs:  -->
 
+1. explore the impact of increasing EPR and CPE on the traffic pattern.
+
+2. explore the effectiveness of nexullance results, compared to ugal.
+
+3. use flow-level modeling to calculate network throughput, compare with flit and message level simualations
+
+4. run a benchmark for three modeling approaches: flit-level, message-level, and flow-level.
+
 try ddf 36: change EPR and the routing algorithm
 try other topologies
 
-observation: one core can only send (and also receive) one packet at a time, it seems to make sense
-But why such long delay? (almost 1000ns?)  -> the large delay has been removed, but which one is more real? Can we test this by running a real MPI app?
 
-# TODO: things to write down:
-1. methods of traffic visualization
-2. Observations of traffic patterns from basic or complex Ember Motifs
-3. Experiments on different bench parameters, and routing algorithms
-4. talk about Nexullance
