@@ -11,10 +11,10 @@ graph_data_path=os.environ['PICKLED_DATA']
 LOAD=1.0
 # RT_algo='ASP'# the way that the routing table is calculated
 
-UNIFIED_ROUTER_LINK_BW=16 #GBps
-EPR=4
+UNIFIED_ROUTER_LINK_BW=10 #GBps
 V=36
-D=7
+D=5
+EPR=(D+1)//2
 topo_name="RRG"
 topo_full_name=f"({V},{D}){topo_name}topo"
 Routing="ASP"
@@ -63,8 +63,7 @@ if __name__ == "__main__":
     networkif.vn_remap = [0]
     
 
-    targetgen=ShiftTarget()
-    targetgen.shift=(EPR*V)//2
+    targetgen=UniformTarget()
     ep = OfferedLoadJob(0,topo.getNumNodes())
     ep.network_interface = networkif
     ep.pattern=targetgen
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     ep.collect_time = "200us"
     ep.warmup_time = "200us"
     ep.drain_time = "0us" 
-    # ep.pattern = "shift_half"
+    # ep.pattern = "uniform"
 
     system = System()
     system.setTopology(topo)

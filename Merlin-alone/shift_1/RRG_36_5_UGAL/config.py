@@ -11,20 +11,21 @@ graph_data_path=os.environ['PICKLED_DATA']
 LOAD=1.0
 # RT_algo='ASP'# the way that the routing table is calculated
 
-UNIFIED_ROUTER_LINK_BW=16 #GBps
-EPR=4
+UNIFIED_ROUTER_LINK_BW=10 #GBps
 V=36
-D=7
+D=5
+EPR=(D+1)//2
 topo_name="RRG"
 topo_full_name=f"({V},{D}){topo_name}topo"
-Routing="NEXU_MP_APST_Alltoall"
+Routing="ASP"
 
 if __name__ == "__main__":
 
     ### Setup the topology
     topo = topoFromGraph()
     topo.hosts_per_router = EPR
-    topo.algorithm = ["nonadaptive_weighted", "nonadaptive_weighted"]
+    # topo.algorithm = ["ugal_threshold", "ugal_threshold"]
+    topo.algorithm = ["ugal_precise", "ugal_precise"]
     # topo.algorithm = ["minimal","minimal"]
     # import graph edgelist and path dict
     topo.graph_num_vertices=V
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     
 
     targetgen=ShiftTarget()
-    targetgen.shift=(EPR*V)//2
+    targetgen.shift=1
     ep = OfferedLoadJob(0,topo.getNumNodes())
     ep.network_interface = networkif
     ep.pattern=targetgen

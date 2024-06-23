@@ -5,7 +5,7 @@ import pandas as pd
 def get_data(abs_folder_path):
     _Time = 400000000
     # initialize a new pandas dataframe to store the results
-    results_df = pd.DataFrame(columns=['load', 'ave_nlat', 'Phi', 'L_access'])
+    results_df = pd.DataFrame(columns=['load', 'ave_nlat', 'Phi', 'phi'])
     for file_path in sorted(glob.glob(os.path.join(abs_folder_path, '*.csv'))):
         # the file name should be "load_{load}.csv", we will extract the load value from it
         load_value = float(os.path.basename(file_path).split('_')[1][:3])
