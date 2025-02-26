@@ -3,4 +3,8 @@ Three sst-elements: Ember, Firefly, and Merlin are used in the setup. Please ref
 
 For using/reproducing, first run ./setup.sh.
 
-Make sure you have installed the sst-core and sst-element (from_graph fork)
+Make sure you have installed the sst-core () and sst-element ()
+
+## subdir
+
+
