@@ -4,7 +4,7 @@ DDF36/
 pickled_data/*.pickle
 pickled_data/
 archive/
-*.csv
 *.mov
 nohup.out
 archive/
+*auto_config.py

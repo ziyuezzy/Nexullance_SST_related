@@ -1,6 +1,5 @@
 from ultility import run_sst
-
-merlin_temp = "/users/ziyzhang/EFM_experiments/sst_ultility/sst_merlin_config_template.py"
+from paths import SST_MERLIN_TEMP_PATH
 
 config_dict = {
     'LOAD':1.0,
@@ -13,7 +12,7 @@ config_dict = {
     'traffic_pattern': "uniform"
 }
 
-run_sst(config_dict, "merlin_auto_config.py", merlin_temp) 
+run_sst(config_dict, "merlin_auto_config.py", SST_MERLIN_TEMP_PATH) 
 
 config_dict = {
     'LOAD':0.1,
@@ -26,5 +25,5 @@ config_dict = {
     'traffic_pattern': "uniform"
 }
 
-run_sst(config_dict, "merlin_auto_config.py", merlin_temp) 
+run_sst(config_dict, "merlin_auto_config.py", SST_MERLIN_TEMP_PATH) 
 

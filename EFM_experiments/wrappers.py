@@ -1,11 +1,11 @@
 import os, sys
-sys.path.append("/users/ziyzhang/EFM_experiments/")
 import numpy as np
 import pandas as pd
 import io
 from contextlib import redirect_stdout
 import re
 import csv
+from paths import SST_EFM_TEMP_PATH, REPO_ROOT
 
 from sst_ultility.ultility import run_sst
 
@@ -26,7 +26,6 @@ example_config_dict = {
 def run_EFM(benchmark:str="FFT3D", benchargs:str=" nx=100 ny=100 nz=100 npRow=12", 
             routing:str = "nonadaptive", traffic_trace_file:str="", default_config_dict:dict = example_config_dict):
     from topoResearch.pickle_data import pickle_paths
-    EFM_temp = "/users/ziyzhang/EFM_experiments/sst_ultility/sst_EFM_config_template.py"
 
     config_dict = default_config_dict.copy()
     config_dict['routing_algo']=routing
@@ -40,7 +39,7 @@ def run_EFM(benchmark:str="FFT3D", benchargs:str=" nx=100 ny=100 nz=100 npRow=12
     # Capture the output
     output = io.StringIO()
     with redirect_stdout(output):
-        run_sst(config_dict, "EFM_auto_config.py", EFM_temp, 8) 
+        run_sst(config_dict, "EFM_auto_config.py", SST_EFM_TEMP_PATH, 8) 
     # Get the content of the output as a string
     captured_output = output.getvalue()
     # print("Captured Output:", captured_output)
@@ -68,8 +67,7 @@ def run_EFM_MD_Nexu(benchmark:str="FFT3D", benchargs:str=" nx=100 ny=100 nz=100 
 
     from topoResearch.pickle_data_MD_nexullance import pickle_MD_nexullance_paths
     from traffic_analyser.traffic_analyser import traffic_analyser
-    EFM_temp = "/users/ziyzhang/EFM_experiments/sst_ultility/sst_EFM_config_template.py"
-    traffic_trace_file=f"/users/ziyzhang/EFM_experiments/EFM_experiments/traffic_traces/{benchmark}{benchargs}.csv"
+    traffic_trace_file=f"{str(REPO_ROOT)}/EFM_experiments/traffic_traces/{benchmark}{benchargs}.csv"
 
     # first run with ASP to sample traffic demand matrices:
     ECMP_ASP_bench_time = run_EFM(benchmark, benchargs, "nonadaptive", traffic_trace_file)
@@ -92,7 +90,7 @@ def run_EFM_MD_Nexu(benchmark:str="FFT3D", benchargs:str=" nx=100 ny=100 nz=100 
     # Capture the output
     output = io.StringIO()
     with redirect_stdout(output):
-        run_sst(config_dict, "EFM_auto_config.py", EFM_temp, 8) 
+        run_sst(config_dict, "EFM_auto_config.py", SST_EFM_TEMP_PATH, 8) 
     # Get the content of the output as a string
     captured_output = output.getvalue()
     # print("Captured Output:", captured_output)
@@ -117,13 +115,12 @@ def run_EFM_MD_Nexu(benchmark:str="FFT3D", benchargs:str=" nx=100 ny=100 nz=100 
 
 class MD_Nexu_sweeper: # for the same traffic trace
     def __init__(self, benchmark:str="FFT3D", benchargs:str=" nx=100 ny=100 nz=100 npRow=12", 
-                 sst_template_file:str = "/users/ziyzhang/EFM_experiments/sst_ultility/sst_EFM_config_template.py", 
+                 sst_template_file:str = SST_EFM_TEMP_PATH, 
                  default_config_dict:dict = example_config_dict) -> None:
         from traffic_analyser.traffic_analyser import traffic_analyser
-        sys.path.append("/users/ziyzhang/EFM_experiments/topoResearch/")
         
         self.EFM_temp = sst_template_file
-        traffic_trace_file=f"/users/ziyzhang/EFM_experiments/EFM_experiments/traffic_traces/{benchmark}{benchargs}.csv"
+        traffic_trace_file=f"{str(REPO_ROOT)}/EFM_experiments/traffic_traces/{benchmark}{benchargs}.csv"
         self.benchmark = benchmark
         self.benchargs = benchargs
 

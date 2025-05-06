@@ -1,6 +1,7 @@
 from ultility import run_sst
+from paths import SST_EFM_TEMP_PATH
 
-EFM_temp = "/users/ziyzhang/EFM_experiments/sst_ultility/sst_EFM_config_template.py"
+EFM_temp = SST_EFM_TEMP_PATH
 
 config_dict = {
     'LOAD':1.0,

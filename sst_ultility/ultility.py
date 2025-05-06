@@ -19,6 +19,7 @@ def run_sst(config_dict: dict, config_file_path:str, template_file_path:str, num
 
     # first dump the config dict
     with open(config_file_path, 'w') as file:
+        file.write("import numpy as np\n")
         file.write("config_dict = ")
         file.write(repr(config_dict))  # Writes the dictionary in a format that Python can interpret
         # Read the contents of the template file

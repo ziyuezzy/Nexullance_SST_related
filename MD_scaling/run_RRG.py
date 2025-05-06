@@ -1,13 +1,12 @@
 import os
 import sys
-sys.path.append("/users/ziyzhang/EFM_experiments/topoResearch/")
-sys.path.append("/users/ziyzhang/EFM_experiments/")
 from topoResearch.topologies.HPC_topo import HPC_topo
 from topoResearch.nexullance.ultility import nexullance_exp_container
 import topoResearch.global_helpers as gl
 from traffic_analyser.traffic_analyser import traffic_analyser
 from EFM_experiments.wrappers import run_EFM
 import csv
+from paths import REPO_ROOT
 
 def write_into_csvfile(filename:csv, content_row:list):
     with open(filename, mode='a', newline='') as csv_file:
@@ -22,7 +21,7 @@ benchargs:str=f" iterations=10 count={problem_size}"
 topo_name = "RRG"
 # for method in ["MP_APST_4"]:
 for method in ["IT", "MP_APST_4"]:
-    output_csv_file = f"/users/ziyzhang/EFM_experiments/MD_scaling/{topo_name}_{method}.csv"
+    output_csv_file = f"{str(REPO_ROOT)}/MD_scaling/{topo_name}_{method}.csv"
     write_into_csvfile(output_csv_file, ["V", "D", "num_samples", "ave_time[s]", "std_time[s]"])
 
     for (V, D) in [(36, 5), (49, 6), (64, 7), (81, 8), (100, 9)]:
