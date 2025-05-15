@@ -1,3 +1,3 @@
-python run_FFT3D.py
-python run_AllReduce.py
-python run_Alltoall.py
+python3.12 run_FFT3D.py
+python3.12 run_AllReduce.py
+python3.12 run_Alltoall.py

@@ -1,3 +1,4 @@
+import numpy as np
 config_dict = {'UNIFIED_ROUTER_LINK_BW': 16, 'V': 36, 'D': 5, 'topo_name': 'RRG', 'identifier': 'MD_Nexullance_MP_APST_4_128samples_autoscaled_Alltoall bytes=64', 'routing_algo': 'nonadaptive_weighted', 'benchmark': 'Alltoall', 'benchargs': ' bytes=64', 'Cores_per_EP': 4}
 import os
 import sys

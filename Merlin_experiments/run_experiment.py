@@ -38,7 +38,7 @@ def run_experiment(config_dict, nexullance_method=None, path_dict="ASP"):
             latency_data[offered_load] = latency_value
 
     # Generate CSV file name
-    csv_filename = REPO_ROOT.as_posix() + "Merlin_experiments/data"
+    csv_filename = REPO_ROOT.as_posix() + "/Merlin_experiments/data/"
     for key, val in config_dict.items():
         if key not in ['LOAD', 'UNIFIED_ROUTER_LINK_BW']:
             csv_filename += str(val) + "_"

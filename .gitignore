@@ -8,3 +8,4 @@ archive/
 nohup.out
 archive/
 *auto_config.py
+traffic_traces/

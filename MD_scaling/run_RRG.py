@@ -40,7 +40,7 @@ for method in ["IT", "MP_APST_4"]:
                 'Cores_per_EP': 4
             }
 
-            traffic_trace_file=f"./traffic_traces/{benchmark}{benchargs}_({V},{D}){topo_name}_ECMP_ASP.csv"
+            traffic_trace_file= f"{str(REPO_ROOT)}/EFM_experiments/traffic_traces/{benchmark}{benchargs}_({V},{D}){topo_name}_ECMP_ASP.csv"
             if not os.path.isfile(traffic_trace_file):
                 # If traffic trace is missing, first run with ASP to sample traffic demand matrices:
                 _ = run_EFM(benchmark, benchargs, "nonadaptive", traffic_trace_file, default_config_dict=config_dict)

@@ -1,4 +1,5 @@
-config_dict = {'UNIFIED_ROUTER_LINK_BW': 16, 'V': 100, 'D': 9, 'topo_name': 'RRG', 'identifier': 'ASP', 'routing_algo': 'nonadaptive', 'benchmark': 'Allreduce', 'benchargs': ' iterations=10 count=256', 'Cores_per_EP': 4, 'traffic_trace_file': './traffic_traces/Allreduce iterations=10 count=256_(100,9)RRG_ECMP_ASP.csv'}
+import numpy as np
+config_dict = {'UNIFIED_ROUTER_LINK_BW': 16, 'V': 100, 'D': 9, 'topo_name': 'RRG', 'identifier': 'ASP', 'routing_algo': 'nonadaptive', 'benchmark': 'Allreduce', 'benchargs': ' iterations=10 count=256', 'Cores_per_EP': 4, 'traffic_trace_file': '/groups/ilabt-imec-be/hpcnetworksimulation/ziyzhang/EFM_experiments/EFM_experiments/traffic_traces/Allreduce iterations=10 count=256_(100,9)RRG_ECMP_ASP.csv'}
 import os
 import sys
 

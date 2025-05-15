@@ -1,6 +1,4 @@
-import sys
-sys.path.append("..")
-from wrappers import run_EFM, MD_Nexu_sweeper
+from EFM_experiments.wrappers import run_EFM, MD_Nexu_sweeper
 import csv
 
 bench = "Allreduce"

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from IPython.core.display import display, HTML
+# from IPython.core.display import display, HTML
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from .helpers import *
@@ -163,7 +163,7 @@ class traffic_analyser():
         
 
     def sample_ranged_sent_traffic(self, num_samples: int):
-        # evenly divide the benchmark time span into pieceds, and then calculate the accumulated traffic demand matrices in each period of time
+        # evenly divide the benchmark time span into pieces, and then calculate the accumulated traffic demand matrices in each period of time
         # return a list of traffic demand matrices with equal weights
 
         # sample points exclude the start time stamp, but include the end time stamp
