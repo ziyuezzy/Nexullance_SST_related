@@ -210,6 +210,51 @@ class traffic_analyser():
         weights = [count/sum(counts) for count in counts]
         return matrices, weights, sampling_interval/1_000 # return matrices, the weights and the sampling interval in microseconds
 
+    def sample_ranged_traffic_raw(self, num_samples: int = 0, sampling_interval: float = 0, method:str = "sent"):
+        """
+        the resulting traffic demand matrices are in Bytes
+        """
+        # evenly divide the benchmark time span into pieces, and then calculate the accumulated traffic demand matrices in each period of time
+        # return a list of traffic demand matrices with equal weights
+        # sample points exclude the start time stamp, but include the end time stamp
+        # sample the traffic traces with the sampling interval, the sampling interval has unit of millisecond
+
+        # number of samples must be greater than one
+        assert(num_samples>=1)
+        if num_samples > 0:
+            assert(sampling_interval == 0)
+            sampling_interval:float=(self.max_time-self.min_time)/num_samples/1000 # unit: microsecond
+        else:
+            assert(sampling_interval > 0)
+            num_samples = int((self.max_time-self.min_time)/1000/sampling_interval) + 1
+
+        # If the packet size is 45 B and link bandwidth is 16Gbps, then forwarding one packet need 23 ns.
+        # The sampling interval should be big enough to neglect the forwarding of an individual packets, otherwise the sampled traffic demand matrix will have very large entries, which is not realistic
+        # therefore, sampling_interval in this case is at least 1 microsecond
+        if sampling_interval < 0.01:
+            print(f"Warning: sampling interval ({sampling_interval} us) might be too small, packet transmission delay is 23ns")
+
+        matrices = []
+        for sample in range(num_samples):
+            current_time =  self.min_time + sample*sampling_interval
+            next_time = current_time + sampling_interval
+            sampled_matrix = np.zeros((self.num_EPs, self.num_EPs))
+            if method == "sent":
+                sampled_packets = self.pkt_data[(self.pkt_data['enter_time'] < next_time) & (self.pkt_data['enter_time'] >= current_time)]
+            elif method == "enroute":
+                sampled_packets = self.pkt_data[(self.pkt_data['enter_time'] < next_time) & (self.pkt_data['leave_time'] >= current_time)]
+            else:
+                print("invalid method for sampling traffic: ", method)
+                sys.exit(1)
+                # return self.sample_enroute_traffic(num_samples)
+            for _, row in sampled_packets.iterrows():
+                src_nic = row['srcNIC']
+                dest_nic = row['destNIC']
+                sampled_matrix[src_nic][dest_nic] += 8*row['Size_Bytes'] #B
+
+            matrices.append(sampled_matrix)
+        return matrices, num_samples, sampling_interval # return matrices, the number of samples and the sampling interval in microseconds
+
     def filter_traffic_demand_matrices(self, input_matrices:list, input_weights:list, max_link_load_threshold:float = 1.0):
         # take the sampled demand matrices as input, return filtered demand matrices
         # for each of the traffic demand matrix, we do a flow-level modeling, if the max (core/access) link load is lower than the threshold value, discard that traffic demand matrix.
