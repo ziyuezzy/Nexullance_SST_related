@@ -47,15 +47,14 @@ if __name__ == "__main__":
         # Determine if using SD (single-demand) or MD (multi-demand) optimization
         nexullance_method = config_dict.get('nexullance_method', 'SD')  # 'SD' or 'MD'
         num_demand_samples = config_dict.get('num_demand_samples', 1)  # For MD method
-        max_path_length = config_dict.get('max_path_length', 4)  # For MD method
     else:
         routing_method = config_dict.get('routing_method', 'shortest_path')
 
     # Traffic demand collection configuration
     gen_traffic_demand = 'traffic_demand_file' in config_dict
     traffic_demand_file = config_dict['traffic_demand_file'] if gen_traffic_demand else ""
-    traffic_collection_rate = config_dict.get('traffic_collection_rate', '10us')
-    throughput_file = config_dict.get('throughput_file', f"efm_{BENCH}.csv")
+    traffic_collection_rate = config_dict.get('traffic_collection_rate', '100us')
+    # throughput_file = config_dict.get('throughput_file', f"efm_{BENCH}.csv")
 
     topo_full_name=f"({V},{D}){topo_name}"
 
@@ -78,6 +77,7 @@ if __name__ == "__main__":
         # UGAL adaptive routing with source routing table
         routing_table = topo.calculate_routing_table()
         topo.source_routing_algo = "UGAL"
+        topo.vn_ugal_num_valiant = config_dict.get('vn_ugal_num_valiant', '1')
         print(f"Using UGAL adaptive routing with source routing table")
         
     elif routing_method == 'nexullance':
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         
         if nexullance_method == 'MD':
             # Multi-demand Nexullance MD optimization
-            print(f"Using Multi-Demand Nexullance MD with {num_demand_samples} samples, max_path_length={max_path_length}")
+            print(f"Using Multi-Demand Nexullance MD with {num_demand_samples} samples")
             
             # Get sampled demand matrices using sample_traffic API
             M_EPs_samples, weights, sampling_interval_us = analyzer.sample_traffic(
@@ -143,8 +143,9 @@ if __name__ == "__main__":
             print(f"Nexullance IT optimization complete. Routing table size: {len(nexullance_RT)}")
         
         # Convert nexullance routing table to SST format
-        routing_table = convert_nexullance_RT_to_SST_format(nexullance_RT)
+        routing_table, max_path_length = convert_nexullance_RT_to_SST_format(nexullance_RT)
         topo.source_routing_algo = "weighted"
+        topo.vcs_per_vn = max_path_length
         print(f"Routing table converted to SST format with {len(routing_table)} source endpoints")
         print(f"Using Nexullance weighted routing ({nexullance_method})")
         
@@ -214,13 +215,13 @@ if __name__ == "__main__":
         })
         sst.enableAllStatisticsForComponentType("merlin.demandMatrixPlugin",
                                             {"type":"sst.AccumulatorStatistic","rate":traffic_collection_rate})
-    else:
-        # Collect throughput statistics
-        sst.setStatisticLoadLevel(10)
-        sst.setStatisticOutput("sst.statOutputCSV");
-        sst.setStatisticOutputOptions({
-            "filepath" : throughput_file,
-            "separator" : ", "
-        })
-        sst.enableAllStatisticsForComponentType("merlin.linkcontrol", {"type":"sst.AccumulatorStatistic","rate":"0ns"})
+    # else:
+    #     # Collect throughput statistics
+    #     sst.setStatisticLoadLevel(10)
+    #     sst.setStatisticOutput("sst.statOutputCSV");
+    #     sst.setStatisticOutputOptions({
+    #         "filepath" : throughput_file,
+    #         "separator" : ", "
+    #     })
+    #     sst.enableAllStatisticsForComponentType("merlin.linkcontrol", {"type":"sst.AccumulatorStatistic","rate":"0ns"})
 

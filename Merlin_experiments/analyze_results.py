@@ -64,6 +64,20 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
     # Create figure with subplots
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
+    # Define distinct styles for each routing method to avoid overlap confusion
+    styles = {
+        'shortest_path': {'marker': 'o', 'linestyle': '-', 'linewidth': 2.5, 'markersize': 8, 'alpha': 0.9, 'color': 'black'},
+        'nexullance': {'marker': 's', 'linestyle': '--', 'linewidth': 2.5, 'markersize': 7, 'alpha': 0.9, 'color': 'red'},
+        'md_nexullance': {'marker': 'd', 'linestyle': '--', 'linewidth': 2.5, 'markersize': 7, 'alpha': 0.9, 'color': 'darkred'},
+        'ugal_1': {'marker': '^', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'blue'},
+        'ugal_2': {'marker': 'v', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'cyan'},
+        'ugal_3': {'marker': '<', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'green'},
+        'ugal_4': {'marker': '>', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'orange'},
+        'ugal_5': {'marker': 'p', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'purple'},
+        'ugal_threshold': {'marker': '*', 'linestyle': ':', 'linewidth': 2.5, 'markersize': 9, 'alpha': 0.9, 'color': 'magenta'},
+        'default': {'marker': 'x', 'linestyle': '-', 'linewidth': 2.5, 'markersize': 7, 'alpha': 0.9, 'color': 'gray'}
+    }
+    
     # Plot 1: Throughput vs Load
     ax1 = axes[0]
     routing_methods = filtered['routing_method'].unique()
@@ -72,17 +86,38 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
         method_data = filtered[filtered['routing_method'] == method]
         method_data = method_data.sort_values('load')
         
-        # Plot with markers
+        # Get style for this method
+        style = styles.get(method, styles['default'])
+        
+        # Format label for better readability
+        if method.startswith('ugal_'):
+            label = f"UGAL (valiant={method.split('_')[1]})"
+        elif method == 'md_nexullance':
+            label = "MD_Nexullance_IT_1_sample"
+        elif method == 'nexullance':
+            label = "SD_Nexullance_IT"
+        else:
+            label = method.replace('_', ' ').title()
+        
+        # Plot with distinct markers and line styles
         ax1.plot(method_data['load'], method_data['throughput_gbps'], 
-                marker='o', linewidth=2, markersize=6, label=method.replace('_', ' ').title())
+                marker=style['marker'], 
+                linestyle=style['linestyle'],
+                linewidth=style['linewidth'], 
+                markersize=style['markersize'],
+                alpha=style['alpha'],
+                color=style.get('color'),
+                markeredgewidth=1.5,
+                markeredgecolor='white',
+                label=label)
     
     ax1.set_xlabel('Offered Load', fontsize=12)
     ax1.set_ylabel('Throughput (Gbps)', fontsize=12)
     ax1.set_ylim((0.0, 200))
     ax1.set_title(f'{topo_name} - {traffic_pattern.replace("_", " ").title()} Traffic\nThroughput vs Load', 
                   fontsize=13, fontweight='bold')
-    ax1.legend(fontsize=11)
-    ax1.grid(True, alpha=0.3)
+    ax1.legend(fontsize=11, framealpha=0.95, shadow=True, markerscale=1.2)
+    ax1.grid(True, alpha=0.3, linestyle='--')
     
     # Plot 2: Speedup relative to shortest path
     ax2 = axes[1]
@@ -103,8 +138,29 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
         # Calculate speedup
         merged['speedup'] = merged['throughput_gbps'] / merged['throughput_gbps_baseline']
         
+        # Get style for this method
+        style = styles.get(method, styles['default'])
+        
+        # Format label for better readability
+        if method.startswith('ugal_'):
+            label = f"UGAL (valiant={method.split('_')[1]})"
+        elif method == 'md_nexullance':
+            label = "MD_Nexullance"
+        elif method == 'nexullance':
+            label = "Nexullance"
+        else:
+            label = method.replace('_', ' ').title()
+        
         ax2.plot(merged['load'], merged['speedup'], 
-                marker='s', linewidth=2, markersize=6, label=method.replace('_', ' ').title())
+                marker=style['marker'],
+                linestyle=style['linestyle'],
+                linewidth=style['linewidth'],
+                markersize=style['markersize'],
+                alpha=style['alpha'],
+                color=style.get('color'),
+                markeredgewidth=1.5,
+                markeredgecolor='white',
+                label=label)
     
     # Add baseline reference line
     ax2.axhline(y=1.0, color='gray', linestyle='--', linewidth=1, label='Shortest Path Baseline')
@@ -114,8 +170,8 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
     ax2.set_ylim((0.0, 2.5))
     ax2.set_title(f'{topo_name} - {traffic_pattern.replace("_", " ").title()} Traffic\nSpeedup Comparison', 
                   fontsize=13, fontweight='bold')
-    ax2.legend(fontsize=11)
-    ax2.grid(True, alpha=0.3)
+    ax2.legend(fontsize=11, framealpha=0.95, shadow=True, markerscale=1.2)
+    ax2.grid(True, alpha=0.3, linestyle='--')
     
     plt.tight_layout()
     
@@ -144,8 +200,16 @@ def generate_summary_table(df, output_dir):
         successful = group_df[group_df['throughput_gbps'].notna()]
         
         if len(successful) > 0:
+            # Format method name
+            if method[0].startswith('ugal_'):
+                method_name = f"UGAL (valiant={method[0].split('_')[1]})"
+            elif method[0] == 'md_nexullance':
+                method_name = "MD_Nexullance"
+            else:
+                method_name = method[0].replace('_', ' ').title()
+            
             summary_rows.append({
-                'Routing Method': method[0].replace('_', ' ').title(),
+                'Routing Method': method_name,
                 'Avg Throughput (Gbps)': successful['throughput_gbps'].mean(),
                 'Max Throughput (Gbps)': successful['throughput_gbps'].max(),
                 'Min Throughput (Gbps)': successful['throughput_gbps'].min(),
@@ -179,7 +243,7 @@ def main():
     )
     
     parser.add_argument('--input-dir', type=str, default=None,
-                        help='Directory containing result CSV files (default: simulation_results/)')
+                        help='Directory containing result CSV files (default: Merlin_experiments/)')
     parser.add_argument('--output-dir', type=str, default=None,
                         help='Directory to save plots and analysis (default: Merlin_experiments/plots/)')
     parser.add_argument('--result-files', nargs='+', default=None,
@@ -189,7 +253,7 @@ def main():
     
     # Set default directories
     if args.input_dir is None:
-        input_dir = SIMULATION_RESULTS_DIR
+        input_dir = SCRIPT_DIR
     else:
         input_dir = Path(args.input_dir)
     

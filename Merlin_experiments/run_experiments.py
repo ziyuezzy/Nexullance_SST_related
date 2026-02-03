@@ -47,13 +47,24 @@ def run_comparison_experiment(topo_name: str, V: int, D: int,
         load_start: Starting load
         load_end: Ending load
         load_step: Load increment
-        routing_methods: List of routing methods to compare ['shortest_path', 'nexullance', 'ugal']
+        routing_methods: List of routing methods to compare ['shortest_path', 'nexullance', 'ugal', 'md_nexullance']
     
     Returns:
         DataFrame with comparison results
     """
     if routing_methods is None:
-        routing_methods = ['shortest_path', 'nexullance', 'ugal', 'ugal_threshold']
+        routing_methods = ['shortest_path', 'nexullance', 'ugal']
+    
+    # Expand 'ugal' into ugal_1 through ugal_5 variants
+    expanded_routing_methods = []
+    for method in routing_methods:
+        if method == 'ugal':
+            for num_valiant in range(1, 6):
+                expanded_routing_methods.append(f'ugal_{num_valiant}')
+        else:
+            expanded_routing_methods.append(method)
+    
+    routing_methods = expanded_routing_methods
     
     print("\n" + "="*80)
     print("ROUTING COMPARISON EXPERIMENT")
@@ -80,8 +91,8 @@ def run_comparison_experiment(topo_name: str, V: int, D: int,
         for load in loads:
             print(f"\nLoad = {load:.1f}")
             
-            if routing_method == 'nexullance':
-                # Use the existing nexullance experiment workflow
+            if routing_method == 'nexullance' or routing_method == 'md_nexullance':
+                # Use the nexullance experiment workflow (SD or MD variant)
                 result = run_merlin_experiment_with_nexullance(
                     topo_name=topo_name,
                     V=V,
@@ -91,29 +102,40 @@ def run_comparison_experiment(topo_name: str, V: int, D: int,
                     link_bw=link_bw,
                     num_threads=num_threads,
                     traffic_collection_rate="200us",
-                    demand_scaling_factor=10.0
+                    demand_scaling_factor=10.0,
+                    nexullance_method='MD' if routing_method == 'md_nexullance' else 'SD',
+                    num_demand_samples=1
                 )
                 
                 if result:
                     all_results.append({
                         'load': load,
-                        'routing_method': 'nexullance',
+                        'routing_method': routing_method,
                         'throughput_gbps': result['optimized_throughput_gbps'],
                         'baseline_throughput_gbps': result['baseline_throughput_gbps'],
                         'result_file': result.get('throughput_file', '')
                     })
-                    print(f"✓ Nexullance: {result['optimized_throughput_gbps']:.4f} Gbps")
+                    print(f"✓ {routing_method}: {result['optimized_throughput_gbps']:.4f} Gbps")
                 else:
                     all_results.append({
                         'load': load,
-                        'routing_method': 'nexullance',
+                        'routing_method': routing_method,
                         'throughput_gbps': None,
                         'baseline_throughput_gbps': None,
                         'result_file': None
                     })
-                    print(f"✗ Nexullance FAILED")
+                    print(f"✗ {routing_method} FAILED")
                     
             else:
+                # Handle ugal variants (ugal_1, ugal_2, etc.)
+                if routing_method.startswith('ugal_'):
+                    base_method = 'ugal'
+                    num_valiant = int(routing_method.split('_')[1])
+                    additional_config = {'vn_ugal_num_valiant': str(num_valiant)}
+                else:
+                    base_method = routing_method
+                    additional_config = {}
+                
                 # Use the routing-specific simulation function
                 result = run_merlin_simulation(
                     topo_name=topo_name,
@@ -121,10 +143,11 @@ def run_comparison_experiment(topo_name: str, V: int, D: int,
                     D=D,
                     load=load,
                     traffic_pattern=traffic_pattern,
-                    routing_method=routing_method,
+                    routing_method=base_method,
                     link_bw=link_bw,
                     num_threads=num_threads,
-                    calculate_throughput=True
+                    calculate_throughput=True,
+                    **additional_config
                 )
                 
                 if result:
@@ -175,9 +198,9 @@ def run_comparison_experiment(topo_name: str, V: int, D: int,
             print(f"  Max throughput:     {successful['throughput_gbps'].max():.4f} Gbps")
             print(f"  Min throughput:     {successful['throughput_gbps'].min():.4f} Gbps")
     
-    # Save results
+    # Save results to script directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_csv = PROJECT_ROOT / "simulation_results" / f"routing_comparison_{topo_name}_V{V}_D{D}_{traffic_pattern}_{timestamp}.csv"
+    results_csv = SCRIPT_DIR / f"routing_comparison_{topo_name}_V{V}_D{D}_{traffic_pattern}_{timestamp}.csv"
     df.to_csv(results_csv, index=False)
     print(f"\nResults saved to: {results_csv}")
     
@@ -215,9 +238,9 @@ def main():
     
     # Routing methods
     parser.add_argument('--routing-methods', nargs='+', 
-                        default=['shortest_path', 'nexullance', 'ugal', 'ugal_threshold'],
-                        choices=['shortest_path', 'nexullance', 'ugal', 'ugal_threshold'],
-                        help='Routing methods to compare')
+                        default=['shortest_path', 'nexullance', 'md_nexullance', 'ugal', 'ugal_threshold'],
+                        choices=['shortest_path', 'nexullance', 'md_nexullance', 'ugal', 'ugal_threshold'],
+                        help='Routing methods to compare (ugal will be expanded to ugal_1 through ugal_5)')
     
     # System parameters
     parser.add_argument('--num-threads', type=int, default=8,

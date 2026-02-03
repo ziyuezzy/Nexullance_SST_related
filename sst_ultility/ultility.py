@@ -34,47 +34,29 @@ def convert_nexullance_RT_to_SST_format(nexullance_RT):
             Format: dict with (src, dst) tuple keys mapping to list of (path, weight) tuples
             
     Returns:
-        dict: Routing table in SST format with nested dict structure,
-              swapped tuple order (weight first), and source vertex excluded from paths
+        tuple: (routing_table, max_path_length)
+            - routing_table: dict in SST format with nested dict structure,
+                           swapped tuple order (weight first), and source vertex excluded from paths
+            - max_path_length: maximum path length (hop count) in the routing table
               
     Example:
         Input:  {(0, 3): [([0, 1, 3], 0.5), ([0, 2, 3], 0.5)]}
-        Output: {0: {3: [(0.5, [1, 3]), (0.5, [2, 3])]}}
+        Output: ({0: {3: [(0.5, [1, 3]), (0.5, [2, 3])]}}, 2)
     """
     sst_routing_table = defaultdict(lambda: defaultdict(list))
+    max_path_length = 0
     
     for (src, dst), path_weight_list in nexullance_RT.items():
-        valid_paths = []
-        long_path_weight = 0.0
-        
         for path, weight in path_weight_list:
-            # Check if path exceeds 8 hops (path[1:] excludes source)
+            # Calculate hop count (path[1:] excludes source)
             hop_count = len(path) - 1
-            if hop_count > 8:
-                print(f"WARNING: Path from {src} to {dst} exceeds 8 hops ({hop_count} hops): {path}")
-                print(f"         Weight {weight} will be redistributed to other paths.")
-                long_path_weight += weight
-            else:
-                valid_paths.append((path, weight))
-        
-        # If there are valid paths, redistribute the long path weight
-        if valid_paths:
-            if long_path_weight > 0:
-                # Distribute weight evenly among valid paths
-                additional_weight_per_path = long_path_weight / len(valid_paths)
-                for path, weight in valid_paths:
-                    new_weight = weight + additional_weight_per_path
-                    sst_routing_table[src][dst].append((new_weight, path[1:]))
-            else:
-                # No redistribution needed
-                for path, weight in valid_paths:
-                    sst_routing_table[src][dst].append((weight, path[1:]))
-        elif long_path_weight > 0:
-            # All paths were too long, print error
-            print(f"ERROR: All paths from {src} to {dst} exceed 8 hops. No valid routing available.")
+            max_path_length = max(max_path_length, hop_count)
+            
+            # Convert to SST format: (weight, path_without_source)
+            sst_routing_table[src][dst].append((weight, path[1:]))
     
     # Convert defaultdict to regular dict for cleaner serialization
-    return {src: dict(dst_dict) for src, dst_dict in sst_routing_table.items()}
+    return {src: dict(dst_dict) for src, dst_dict in sst_routing_table.items()}, max_path_length
 
 def _calculate_throughput_from_linkcontrol(throughput_file: str, sim_time_ns: int = 400000000) -> float:
     """
@@ -145,7 +127,6 @@ def _extract_simulation_time_from_output(output_file: str) -> float:
     print(f"Warning: Could not find simulation time in {output_file}")
     return None
 
-
 def _generate_traffic_demand_trace_filename(config_dict: dict, template_type: str) -> str:
     """
     Generate a unique, descriptive filename for traffic demand/trace based on simulation parameters.
@@ -179,7 +160,6 @@ def _generate_traffic_demand_trace_filename(config_dict: dict, template_type: st
     
     return str(TRAFFIC_TRACES_DIR / filename)
 
-
 def _generate_throughput_filename(config_dict: dict, template_type: str) -> str:
     """
     Generate a unique, descriptive filename for throughput statistics based on simulation parameters.
@@ -209,12 +189,13 @@ def _generate_throughput_filename(config_dict: dict, template_type: str) -> str:
     
     return str(SIMULATION_RESULTS_DIR / filename)
 
-
 def run_merlin_experiment_with_nexullance(topo_name: str, V: int, D: int, load: float,
                                           traffic_pattern: str = "uniform", link_bw: int = 16,
                                           num_threads: int = 8, traffic_collection_rate: str = "10us",
                                           Cap_core: float = None, Cap_access: float = None,
-                                          demand_scaling_factor: float = 1.0):
+                                          demand_scaling_factor: float = 10.0,
+                                          nexullance_method: str = "SD",
+                                          num_demand_samples: int = 1):
     """
     Run a complete Merlin experiment with Nexullance optimization:
     1. Run shortest-path (baseline) simulation to collect traffic demand and throughput
@@ -232,7 +213,9 @@ def run_merlin_experiment_with_nexullance(topo_name: str, V: int, D: int, load: 
         traffic_collection_rate: Statistics collection rate (default: "10us")
         Cap_core: Core link capacity for Nexullance (default: None, uses link_bw)
         Cap_access: Access link capacity for Nexullance (default: None, uses link_bw)
-        demand_scaling_factor: Demand scaling factor for Nexullance (default: 1.0)
+        demand_scaling_factor: Demand scaling factor for Nexullance (default: 10.0)
+        nexullance_method: Nexullance method to use: "SD" or "MD" (default: "SD")
+        num_demand_samples: Number of demand samples for MD method (default: 1)
         
     Returns:
         dict: Dictionary containing paths to demand file and throughput file
@@ -302,12 +285,14 @@ def run_merlin_experiment_with_nexullance(topo_name: str, V: int, D: int, load: 
         print(f"Using existing baseline throughput: {baseline_throughput_file}")
     
     print("\n" + "=" * 80)
-    print("STEP 2: Running simulation with NEXULLANCE-optimized routing...")
+    method_display = "MD_NEXULLANCE" if nexullance_method == "MD" else "NEXULLANCE"
+    print(f"STEP 2: Running simulation with {method_display}-optimized routing...")
     print("=" * 80)
     
     # Step 2: Run simulation with nexullance optimization
     throughput_file = _generate_throughput_filename(config, 'merlin')
-    throughput_file = throughput_file.replace('.csv', '_nexullance.csv')
+    suffix = '_md_nexullance.csv' if nexullance_method == 'MD' else '_nexullance.csv'
+    throughput_file = throughput_file.replace('.csv', suffix)
     
     optimized_config = {
         'UNIFIED_ROUTER_LINK_BW': link_bw,
@@ -318,13 +303,17 @@ def run_merlin_experiment_with_nexullance(topo_name: str, V: int, D: int, load: 
         'traffic_pattern': traffic_pattern,
         'throughput_file': throughput_file,
         'nexullance_demand_matrix_file': demand_file,
-        'routing_method': 'nexullance',
+        'routing_method': 'md_nexullance' if nexullance_method == 'MD' else 'nexullance',
         'Cap_core': Cap_core,
         'Cap_access': Cap_access,
-        'demand_scaling_factor': demand_scaling_factor
+        'demand_scaling_factor': demand_scaling_factor,
+        'num_demand_samples': num_demand_samples
     }
     
     print(f"Using demand matrix: {demand_file}")
+    print(f"Using {nexullance_method} optimization method")
+    if nexullance_method == 'MD':
+        print(f"Number of demand samples: {num_demand_samples}")
     print(f"Nexullance throughput will be saved to: {throughput_file}")
     stdout, stderr, returncode, sim_dir = _run_sst(optimized_config, 'merlin', num_threads)
     
@@ -378,16 +367,14 @@ def run_merlin_experiment_with_nexullance(topo_name: str, V: int, D: int, load: 
         'improvement_percent': improvement
     }
 
-
 def run_ember_experiment_with_nexullance(topo_name: str, V: int, D: int, 
                                         benchmark: str, bench_args: str = "",
                                         cores_per_ep: int = 1, link_bw: int = 16,
                                         num_threads: int = 8, traffic_collection_rate: str = "10us",
                                         Cap_core: float = None, Cap_access: float = None,
-                                        demand_scaling_factor: float = 1.0,
+                                        demand_scaling_factor: float = 10.0,
                                         nexullance_method: str = "SD",
-                                        num_demand_samples: int = 1,
-                                        max_path_length: int = 4):
+                                        num_demand_samples: int = 1):
     """
     Run a complete EFM (Ember) experiment with Nexullance optimization:
     1. Run shortest-path (baseline) simulation to collect traffic demand and measure time
@@ -406,10 +393,9 @@ def run_ember_experiment_with_nexullance(topo_name: str, V: int, D: int,
         traffic_collection_rate: Statistics collection rate (default: "10us")
         Cap_core: Core link capacity for Nexullance (default: None, uses link_bw)
         Cap_access: Access link capacity for Nexullance (default: None, uses link_bw)
-        demand_scaling_factor: Demand scaling factor for Nexullance (default: 1.0)
+        demand_scaling_factor: Demand scaling factor for Nexullance (default: 10.0)
         nexullance_method: Nexullance optimization method: 'SD' (single-demand) or 'MD' (multi-demand) (default: 'SD')
         num_demand_samples: Number of demand samples for MD method (default: 1)
-        max_path_length: Maximum path length for MD method (default: 4)
         
     Returns:
         dict: Dictionary containing simulation times and speedup metrics
@@ -487,8 +473,7 @@ def run_ember_experiment_with_nexullance(topo_name: str, V: int, D: int,
         'Cap_access': Cap_access,
         'demand_scaling_factor': demand_scaling_factor,
         'nexullance_method': nexullance_method,
-        'num_demand_samples': num_demand_samples,
-        'max_path_length': max_path_length
+        'num_demand_samples': num_demand_samples
     }
     
     print(f"Using demand matrix: {demand_file}")
@@ -556,7 +541,6 @@ def run_ember_experiment_with_nexullance(topo_name: str, V: int, D: int,
         'speedup': speedup,
         'improvement_percent': improvement
     }
-
 
 def run_merlin_simulation(topo_name: str, V: int, D: int, load: float,
                           traffic_pattern: str = "uniform", link_bw: int = 16,

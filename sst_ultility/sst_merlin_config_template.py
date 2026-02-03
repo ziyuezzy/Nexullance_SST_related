@@ -36,11 +36,12 @@ if __name__ == "__main__":
     # Priority: if nexullance_demand_matrix_file is present, use nexullance routing
     # Otherwise, use the specified routing_method (default: shortest_path)
     if 'nexullance_demand_matrix_file' in config_dict:
-        routing_method = 'nexullance'
+        routing_method = config_dict.get('routing_method', 'nexullance')
         nexullance_demand_file = config_dict['nexullance_demand_matrix_file']
         Cap_core = config_dict.get('Cap_core', UNIFIED_ROUTER_LINK_BW)
         Cap_access = config_dict.get('Cap_access', UNIFIED_ROUTER_LINK_BW)
         demand_scaling_factor = config_dict.get('demand_scaling_factor', 10.0)
+        num_demand_samples = config_dict.get('num_demand_samples', 1)
     else:
         routing_method = config_dict.get('routing_method', 'shortest_path')
     
@@ -71,6 +72,7 @@ if __name__ == "__main__":
         # UGAL adaptive routing with source routing table
         routing_table = topo.calculate_routing_table()
         topo.source_routing_algo = "UGAL"
+        topo.vn_ugal_num_valiant = config_dict.get('vn_ugal_num_valiant', '1')
         print(f"Using UGAL adaptive routing with source routing table")
         
     elif routing_method == 'ugal_threshold':
@@ -80,8 +82,8 @@ if __name__ == "__main__":
         print(f"Using UGAL_THRESHOLD adaptive routing with source routing table")
         
     elif routing_method == 'nexullance':
-        # Nexullance optimized routing with weighted paths
-        print(f"Running Nexullance optimization with demand matrix from: {nexullance_demand_file}")
+        # Nexullance optimized routing with weighted paths (SD version)
+        print(f"Running Nexullance SD optimization with demand matrix from: {nexullance_demand_file}")
         
         # Load and analyze traffic demand
         analyzer = demand_matrix_analyser(
@@ -112,15 +114,67 @@ if __name__ == "__main__":
             traffic_name="optimized",
             _debug=False
         )
-        print(f"Nexullance optimization complete. Routing table size: {len(nexullance_RT)}")
+        print(f"Nexullance SD optimization complete. Routing table size: {len(nexullance_RT)}")
         
         # Convert nexullance routing table to SST format
         # Nexullance RT format: {(src_ep, dst_ep): [(path, weight), ...]}
         # SST required format: {src_ep: {dst_ep: [(weight, path), ...]}}
-        routing_table = convert_nexullance_RT_to_SST_format(nexullance_RT)
+        routing_table, max_path_length = convert_nexullance_RT_to_SST_format(nexullance_RT)
+        topo.source_routing_algo = "weighted"
+        topo.vcs_per_vn = max_path_length
         topo.source_routing_algo = "weighted"
         print(f"Routing table converted to SST format with {len(routing_table)} source endpoints")
         print(f"Using Nexullance weighted routing")
+        
+    elif routing_method == 'md_nexullance':
+        # MD_Nexullance optimized routing with weighted paths (MD version)
+        print(f"Running MD_Nexullance optimization with demand matrix from: {nexullance_demand_file}")
+        print(f"Number of demand samples: {num_demand_samples}")
+        
+        # Load and analyze traffic demand
+        analyzer = demand_matrix_analyser(
+            input_csv_path=nexullance_demand_file,
+            V=V, D=D, topo_name=topo_name, EPR=EPR,
+            Cap_core=Cap_core, Cap_access=Cap_access,
+            suffix="md_nexullance_opt",
+            use_per_interval=True
+        )
+        
+        # Get accumulated demand matrix (for single sample, this is the same as nexullance)
+        M_EPs = analyzer.get_accumulated_demand_matrix(plot=False)
+        print(f"Loaded demand matrix shape: {M_EPs.shape}")
+        print(f"Demand matrix sum: {np.sum(M_EPs):.2e}")
+        
+        # Import the nexullance module dynamically based on configuration
+        nexullance_module = __import__(NEXULLANCE_MODULE_PATH, fromlist=[NEXULLANCE_CONTAINER_CLASS])
+        nexullance_container_class = getattr(nexullance_module, NEXULLANCE_CONTAINER_CLASS)
+        nexu_container = nexullance_container_class(
+            topo_name=topo_name, V=V, D=D, EPR=EPR,
+            Cap_core=Cap_core, Cap_access=Cap_access,
+            Demand_scaling_factor=demand_scaling_factor
+        )
+        
+        # Run MD_Nexullance IT optimization with demand samples
+        # For single sample comparison, we pass the demand matrix as a single-element list
+        M_EPs_list = [M_EPs] * num_demand_samples
+        M_EPs_weights = [1.0 / num_demand_samples] * num_demand_samples
+        
+        _, nexullance_RT = nexu_container.run_MD_nexullance_IT_return_RT(
+            M_EPs_s=M_EPs_list,
+            M_EPs_weights=M_EPs_weights,
+            _debug=False
+        )
+        print(f"MD_Nexullance optimization complete. Routing table size: {len(nexullance_RT)}")
+        
+        # Convert nexullance routing table to SST format
+        # Nexullance RT format: {(src_ep, dst_ep): [(path, weight), ...]}
+        # SST required format: {src_ep: {dst_ep: [(weight, path), ...]}}
+        routing_table, max_path_length = convert_nexullance_RT_to_SST_format(nexullance_RT)
+        topo.source_routing_algo = "weighted"
+        topo.vcs_per_vn = max_path_length
+        topo.source_routing_algo = "weighted"
+        print(f"Routing table converted to SST format with {len(routing_table)} source endpoints")
+        print(f"Using MD_Nexullance weighted routing")
         
     else:
         # Default: shortest path routing

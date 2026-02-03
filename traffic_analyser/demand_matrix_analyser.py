@@ -181,9 +181,10 @@ class demand_matrix_analyser():
             raise ValueError(f"num_samples must be positive, got {num_samples}")
         
         if num_samples > total_matrices:
-            print(f"Warning: num_samples ({num_samples}) > total_matrices ({total_matrices}). "
-                  f"Using {total_matrices} samples instead.")
-            num_samples = total_matrices
+            raise ValueError(f"num_samples is larger than the collect samples.")
+            # print(f"Warning: num_samples ({num_samples}) > total_matrices ({total_matrices}). "
+            #       f"Using {total_matrices} samples instead.")
+            # num_samples = total_matrices
         
         # Calculate aggregation factor (round up to ensure we use all matrices)
         import math
