@@ -22,8 +22,8 @@ PYTHON=python3.12
 # Topology configurations from archive experiments
 # Format: "topo_name V D"
 CONFIGS=(
-    # "RRG 36 5"
-    # "DDF 36 5"
+    "RRG 36 5"
+    "DDF 36 5"
     "Slimfly 32 6"
 )
 
