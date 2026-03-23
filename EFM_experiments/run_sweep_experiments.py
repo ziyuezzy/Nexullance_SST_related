@@ -89,15 +89,19 @@ def run_benchmark_sample_sweep(
     # Network info string for CSV
     network_info = f"{topo_name}_V{V}_D{D}"
     
-    # CSV files - consolidated baseline methods and separate MD sweep
+    # CSV files - consolidated baseline methods and separate sweeps
     csv_files = {
         "baseline_methods": output_dir / f"{network_info}_{benchmark_name}_{param_name}_baseline_methods_{timestamp}.csv",
+        "ugal_sweep": output_dir / f"{network_info}_{benchmark_name}_{param_name}_ugal_sweep_{timestamp}.csv",
         "nexullance_MD": output_dir / f"{network_info}_{benchmark_name}_{param_name}_nexullance_MD_sample_sweep_{timestamp}.csv"
     }
     
     # Write headers
     write_csv_row(str(csv_files["baseline_methods"]), 
-                 ["network", param_name, "shortest_path_ms", "ugal_ms", "ugal_speedup"])
+                 ["network", param_name, "shortest_path_ms"])
+    write_csv_row(str(csv_files["ugal_sweep"]),
+                 ["network", param_name, "num_valiant", "baseline_sim_time_ms",
+                  "ugal_sim_time_ms", "speedup", "improvement_percent"])
     write_csv_row(str(csv_files["nexullance_MD"]), 
                  ["network", param_name, "num_samples", "baseline_sim_time_ms", 
                   "optimized_sim_time_ms", "speedup", "improvement_percent"])
@@ -148,36 +152,39 @@ def run_benchmark_sample_sweep(
             print(f"ERROR: Baseline simulation failed")
             continue
         
-        # 2. UGAL routing
-        print(f"\n[2/3] Running UGAL...")
-        from sst_ultility.ultility import _run_sst
-        ugal_config = {
-            'UNIFIED_ROUTER_LINK_BW': link_bw,
-            'V': V, 'D': D,
-            'topo_name': topo_name,
-            'benchmark': benchmark_name,
-            'benchargs': bench_args,
-            'Cores_per_EP': cores_per_ep,
-            'routing_method': 'ugal'
-        }
-        stdout, stderr, returncode, sim_dir = _run_sst(ugal_config, 'EFM', num_threads)
-        ugal_time = None
-        ugal_speedup = None
-        if returncode == 0:
-            output_file = sim_dir / f"simulation_output_{sim_dir.name}.txt"
-            ugal_time = _extract_simulation_time_from_output(str(output_file))
-            if ugal_time:
-                ugal_speedup = baseline_time / ugal_time
-                print(f"✓ UGAL time: {ugal_time:.4f} ms, speedup: {ugal_speedup:.4f}x")
-            else:
-                print(f"ERROR: Could not extract UGAL time for {param_name}={size}")
-        else:
-            print(f"ERROR: UGAL simulation failed for {param_name}={size}")
-        
-        # Write consolidated baseline methods result
+        # Write baseline methods result (shortest_path only)
         write_csv_row(str(csv_files["baseline_methods"]), 
-                     [network_info, size, baseline_time, 
-                      ugal_time if ugal_time else '', ugal_speedup if ugal_speedup else ''])
+                     [network_info, size, baseline_time])
+        
+        # 2. UGAL routing with num_valiant sweep (1-5)
+        print(f"\n[2/3] Running UGAL with num_valiant sweep (1-5)...")
+        from sst_ultility.ultility import _run_sst
+        for num_valiant in range(1, 6):
+            print(f"  Testing UGAL with num_valiant={num_valiant}...")
+            ugal_config = {
+                'UNIFIED_ROUTER_LINK_BW': link_bw,
+                'V': V, 'D': D,
+                'topo_name': topo_name,
+                'benchmark': benchmark_name,
+                'benchargs': bench_args,
+                'Cores_per_EP': cores_per_ep,
+                'routing_method': 'ugal',
+                'vn_ugal_num_valiant': str(num_valiant)
+            }
+            stdout, stderr, returncode, sim_dir = _run_sst(ugal_config, 'EFM', num_threads)
+            if returncode == 0:
+                output_file = sim_dir / f"simulation_output_{sim_dir.name}.txt"
+                ugal_time = _extract_simulation_time_from_output(str(output_file))
+                if ugal_time:
+                    ugal_speedup = baseline_time / ugal_time
+                    ugal_improvement = ((baseline_time - ugal_time) / baseline_time) * 100
+                    write_csv_row(str(csv_files["ugal_sweep"]),
+                                 [network_info, size, num_valiant, baseline_time, ugal_time, ugal_speedup, ugal_improvement])
+                    print(f"    ✓ UGAL (num_valiant={num_valiant}): {ugal_time:.4f} ms, speedup: {ugal_speedup:.4f}x")
+                else:
+                    print(f"    ERROR: Could not extract UGAL time for num_valiant={num_valiant}")
+            else:
+                print(f"    ERROR: UGAL simulation failed for num_valiant={num_valiant}")
         
         # 3. Multi-demand Nexullance (MD) with sample sweep (starting from num_samples=1)
         print(f"\n[3/3] Running MULTI-DEMAND Nexullance (MD) - SAMPLE SWEEP...")

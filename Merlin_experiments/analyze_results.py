@@ -23,6 +23,27 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from paths import SIMULATION_RESULTS_DIR
 
+# Set matplotlib style for publication-quality plots
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = ['Times New Roman', 'DejaVu Serif', 'serif']
+plt.rcParams['font.size'] = 11
+plt.rcParams['axes.labelsize'] = 12
+plt.rcParams['axes.titlesize'] = 13
+plt.rcParams['axes.linewidth'] = 1.0
+plt.rcParams['legend.fontsize'] = 10
+plt.rcParams['legend.frameon'] = True
+plt.rcParams['legend.edgecolor'] = 'black'
+plt.rcParams['legend.fancybox'] = False
+plt.rcParams['xtick.labelsize'] = 10
+plt.rcParams['ytick.labelsize'] = 10
+plt.rcParams['xtick.major.width'] = 1.0
+plt.rcParams['ytick.major.width'] = 1.0
+plt.rcParams['grid.alpha'] = 0.3
+plt.rcParams['grid.linestyle'] = '--'
+plt.rcParams['grid.linewidth'] = 0.5
+plt.rcParams['savefig.dpi'] = 300
+plt.rcParams['savefig.bbox'] = 'tight'
+
 
 def load_and_merge_results(result_files):
     """
@@ -64,18 +85,108 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
     # Create figure with subplots
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
-    # Define distinct styles for each routing method to avoid overlap confusion
+    # Define distinct styles for each routing method with high visual distinguishability
     styles = {
-        'shortest_path': {'marker': 'o', 'linestyle': '-', 'linewidth': 2.5, 'markersize': 8, 'alpha': 0.9, 'color': 'black'},
-        'nexullance': {'marker': 's', 'linestyle': '--', 'linewidth': 2.5, 'markersize': 7, 'alpha': 0.9, 'color': 'red'},
-        'md_nexullance': {'marker': 'd', 'linestyle': '--', 'linewidth': 2.5, 'markersize': 7, 'alpha': 0.9, 'color': 'darkred'},
-        'ugal_1': {'marker': '^', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'blue'},
-        'ugal_2': {'marker': 'v', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'cyan'},
-        'ugal_3': {'marker': '<', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'green'},
-        'ugal_4': {'marker': '>', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'orange'},
-        'ugal_5': {'marker': 'p', 'linestyle': '-.', 'linewidth': 2.0, 'markersize': 7, 'alpha': 0.85, 'color': 'purple'},
-        'ugal_threshold': {'marker': '*', 'linestyle': ':', 'linewidth': 2.5, 'markersize': 9, 'alpha': 0.9, 'color': 'magenta'},
-        'default': {'marker': 'x', 'linestyle': '-', 'linewidth': 2.5, 'markersize': 7, 'alpha': 0.9, 'color': 'gray'}
+        'shortest_path': {
+            'marker': 'o', 
+            'linestyle': '-', 
+            'linewidth': 2.5, 
+            'markersize': 8, 
+            'alpha': 0.95, 
+            'color': '#2F4F4F',  # Dark slate gray
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'nexullance': {
+            'marker': 's', 
+            'linestyle': '--', 
+            'linewidth': 2.5, 
+            'markersize': 8, 
+            'alpha': 0.95, 
+            'color': '#2ca02c',  # Green (matching EFM MD_Nexullance)
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'md_nexullance': {
+            'marker': 'D', 
+            'linestyle': '--', 
+            'linewidth': 2.5, 
+            'markersize': 7, 
+            'alpha': 0.95, 
+            'color': '#1f7a1f',  # Dark green
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'ugal_1': {
+            'marker': '^', 
+            'linestyle': '-', 
+            'linewidth': 2.2, 
+            'markersize': 8, 
+            'alpha': 0.90, 
+            'color': '#ff7f0e',  # Orange
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'ugal_2': {
+            'marker': 'v', 
+            'linestyle': '--', 
+            'linewidth': 2.2, 
+            'markersize': 8, 
+            'alpha': 0.90, 
+            'color': '#d62728',  # Red
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'ugal_3': {
+            'marker': '<', 
+            'linestyle': '-.', 
+            'linewidth': 2.2, 
+            'markersize': 8, 
+            'alpha': 0.90, 
+            'color': '#9467bd',  # Purple
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'ugal_4': {
+            'marker': '>', 
+            'linestyle': ':', 
+            'linewidth': 2.5, 
+            'markersize': 8, 
+            'alpha': 0.90, 
+            'color': '#8c564b',  # Brown
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'ugal_5': {
+            'marker': 'p', 
+            'linestyle': (0, (3, 1, 1, 1)), 
+            'linewidth': 2.2, 
+            'markersize': 9, 
+            'alpha': 0.90, 
+            'color': '#e377c2',  # Pink
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'ugal_threshold': {
+            'marker': '*', 
+            'linestyle': (0, (5, 2)), 
+            'linewidth': 2.5, 
+            'markersize': 11, 
+            'alpha': 0.95, 
+            'color': '#17becf',  # Cyan
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        },
+        'default': {
+            'marker': 'x', 
+            'linestyle': '-', 
+            'linewidth': 2.5, 
+            'markersize': 8, 
+            'alpha': 0.9, 
+            'color': '#7f7f7f',  # Gray
+            'markeredgecolor': 'white',
+            'markeredgewidth': 1.5
+        }
     }
     
     # Plot 1: Throughput vs Load
@@ -91,11 +202,13 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
         
         # Format label for better readability
         if method.startswith('ugal_'):
-            label = f"UGAL (valiant={method.split('_')[1]})"
+            label = f"UGAL-{method.split('_')[1]}"
         elif method == 'md_nexullance':
-            label = "MD_Nexullance_IT_1_sample"
+            label = "MD_Nexullance_IT"
         elif method == 'nexullance':
             label = "SD_Nexullance_IT"
+        elif method == 'shortest_path':
+            label = "Shortest Path"
         else:
             label = method.replace('_', ' ').title()
         
@@ -106,18 +219,19 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
                 linewidth=style['linewidth'], 
                 markersize=style['markersize'],
                 alpha=style['alpha'],
-                color=style.get('color'),
-                markeredgewidth=1.5,
-                markeredgecolor='white',
+                color=style['color'],
+                markeredgewidth=style['markeredgewidth'],
+                markeredgecolor=style['markeredgecolor'],
                 label=label)
     
-    ax1.set_xlabel('Offered Load', fontsize=12)
-    ax1.set_ylabel('Throughput (Gbps)', fontsize=12)
+    ax1.set_xlabel('Offered Load', fontsize=12, fontweight='bold')
+    ax1.set_ylabel('Throughput (Gbps)', fontsize=12, fontweight='bold')
     ax1.set_ylim((0.0, 200))
     ax1.set_title(f'{topo_name} - {traffic_pattern.replace("_", " ").title()} Traffic\nThroughput vs Load', 
-                  fontsize=13, fontweight='bold')
-    ax1.legend(fontsize=11, framealpha=0.95, shadow=True, markerscale=1.2)
-    ax1.grid(True, alpha=0.3, linestyle='--')
+                  fontsize=13, fontweight='bold', pad=10)
+    ax1.legend(fontsize=10, framealpha=0.98, shadow=False, edgecolor='black', 
+               fancybox=False, markerscale=1.0, loc='best')
+    ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
     
     # Plot 2: Speedup relative to shortest path
     ax2 = axes[1]
@@ -143,11 +257,11 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
         
         # Format label for better readability
         if method.startswith('ugal_'):
-            label = f"UGAL (valiant={method.split('_')[1]})"
+            label = f"UGAL-{method.split('_')[1]}"
         elif method == 'md_nexullance':
-            label = "MD_Nexullance"
+            label = "MD_Nexullance_IT"
         elif method == 'nexullance':
-            label = "Nexullance"
+            label = "SD_Nexullance_IT"
         else:
             label = method.replace('_', ' ').title()
         
@@ -157,21 +271,23 @@ def plot_comparison(df, topo_name, traffic_pattern, output_dir):
                 linewidth=style['linewidth'],
                 markersize=style['markersize'],
                 alpha=style['alpha'],
-                color=style.get('color'),
-                markeredgewidth=1.5,
-                markeredgecolor='white',
+                color=style['color'],
+                markeredgewidth=style['markeredgewidth'],
+                markeredgecolor=style['markeredgecolor'],
                 label=label)
     
     # Add baseline reference line
-    ax2.axhline(y=1.0, color='gray', linestyle='--', linewidth=1, label='Shortest Path Baseline')
+    ax2.axhline(y=1.0, color='#7f7f7f', linestyle=':', linewidth=1.5, 
+                label='Shortest Path Baseline', alpha=0.8, zorder=1)
     
-    ax2.set_xlabel('Offered Load', fontsize=12)
-    ax2.set_ylabel('Speedup vs Shortest Path', fontsize=12)
+    ax2.set_xlabel('Offered Load', fontsize=12, fontweight='bold')
+    ax2.set_ylabel('Speedup vs Shortest Path', fontsize=12, fontweight='bold')
     ax2.set_ylim((0.0, 2.5))
     ax2.set_title(f'{topo_name} - {traffic_pattern.replace("_", " ").title()} Traffic\nSpeedup Comparison', 
-                  fontsize=13, fontweight='bold')
-    ax2.legend(fontsize=11, framealpha=0.95, shadow=True, markerscale=1.2)
-    ax2.grid(True, alpha=0.3, linestyle='--')
+                  fontsize=13, fontweight='bold', pad=10)
+    ax2.legend(fontsize=10, framealpha=0.98, shadow=False, edgecolor='black',
+               fancybox=False, markerscale=1.0, loc='best')
+    ax2.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
     
     plt.tight_layout()
     
