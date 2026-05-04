@@ -25,7 +25,7 @@ def extract_placeholders(format_string, file_name):
             
             if value is None:
                 # Try to extract from end of filename before extension
-                end_pattern = f"{placeholder}_(.*?)\.csv"
+                end_pattern = f"{placeholder}_(.*?)\\.csv"
                 match = re.search(end_pattern, file_name)
                 if match:
                     value = match.group(1)

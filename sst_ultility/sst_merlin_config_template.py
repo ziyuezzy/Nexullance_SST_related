@@ -122,7 +122,6 @@ if __name__ == "__main__":
         routing_table, max_path_length = convert_nexullance_RT_to_SST_format(nexullance_RT)
         topo.source_routing_algo = "weighted"
         topo.vcs_per_vn = max_path_length
-        topo.source_routing_algo = "weighted"
         print(f"Routing table converted to SST format with {len(routing_table)} source endpoints")
         print(f"Using Nexullance weighted routing")
         
@@ -172,7 +171,6 @@ if __name__ == "__main__":
         routing_table, max_path_length = convert_nexullance_RT_to_SST_format(nexullance_RT)
         topo.source_routing_algo = "weighted"
         topo.vcs_per_vn = max_path_length
-        topo.source_routing_algo = "weighted"
         print(f"Routing table converted to SST format with {len(routing_table)} source endpoints")
         print(f"Using MD_Nexullance weighted routing")
         

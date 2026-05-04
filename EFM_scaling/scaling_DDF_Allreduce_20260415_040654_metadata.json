@@ -1,0 +1,18 @@
+{
+  "topo_name": "DDF",
+  "benchmark": "Allreduce",
+  "problem_size": 256,
+  "bench_args": "iterations=10 count=256",
+  "cores_per_ep": 4,
+  "link_bw": 16,
+  "num_threads": 6,
+  "max_routers": 1000,
+  "routing_methods": [
+    "shortest_path",
+    "ugal",
+    "nexullance"
+  ],
+  "num_samples": 32,
+  "num_configs": 5,
+  "timestamp": "20260415_040654"
+}

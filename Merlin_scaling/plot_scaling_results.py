@@ -31,64 +31,6 @@ def load_scaling_results(results_file: str):
     return df, routing_methods
 
 
-def filter_complete_configs(df: pd.DataFrame, routing_methods: list) -> pd.DataFrame:
-    """Return a DataFrame filtered to only include network sizes (V) that have
-    complete data across all present routing methods.
-
-    A V is considered complete if, for every routing method that provides a
-    throughput column in the dataset, the row(s) for that V have non-na
-    values for throughput and runtime, the `*_success` flag is True, and
-    `num_endpoints` is present and non-na.
-    """
-    if 'V' not in df.columns:
-        return df.copy()
-
-    required_base = ['num_endpoints']
-
-    # Determine which method-specific columns to check
-    method_checks = []
-    for method in routing_methods:
-        if f'{method}_throughput' in df.columns:
-            method_checks.append((f'{method}_throughput', f'{method}_success', f'{method}_runtime'))
-
-    complete_vs = set()
-    for v in sorted(df['V'].unique()):
-        sub = df[df['V'] == v]
-        ok = True
-
-        # Check base requirements
-        for col in required_base:
-            if col not in sub.columns or sub[col].isna().any():
-                ok = False
-                break
-
-        if not ok:
-            continue
-
-        # Check each method's required cols for this V
-        for throughput_col, success_col, runtime_col in method_checks:
-            if any(col not in sub.columns for col in (throughput_col, success_col, runtime_col)):
-                ok = False
-                break
-
-            # For all rows corresponding to this V, ensure values are present and success=True
-            for _, row in sub.iterrows():
-                if pd.isna(row[throughput_col]) or pd.isna(row[runtime_col]):
-                    ok = False
-                    break
-                if row[success_col] is not True:
-                    ok = False
-                    break
-            if not ok:
-                break
-
-        if ok:
-            complete_vs.add(v)
-
-    filtered = df[df['V'].isin(complete_vs)].copy()
-    return filtered
-
-
 def plot_performance_scaling(df: pd.DataFrame, routing_methods: list, topo_name: str, output_dir: Path, traffic_pattern: str):
     """Plot throughput vs network size for different routing methods."""
     
@@ -115,7 +57,7 @@ def plot_performance_scaling(df: pd.DataFrame, routing_methods: list, topo_name:
     
     ax.set_xlabel('Number of Routers (V)', fontsize=12)
     ax.set_ylabel('Network Throughput (Gbps)', fontsize=12)
-    ax.set_title(f'{topo_name} Network: Throughput vs Network Size', fontsize=14, fontweight='bold')
+    ax.set_title(f'{topo_name} ({traffic_pattern}): Throughput vs Network Size', fontsize=14, fontweight='bold')
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3)
     
@@ -160,9 +102,13 @@ def plot_speedup_scaling(df: pd.DataFrame, routing_methods: list, topo_name: str
         ax.axhline(y=1.0, color='blue', linestyle='--', linewidth=1.5, 
                    label='Shortest Path (baseline)', alpha=0.7)
         
+        # Ensure y-axis spans at least [0.5, 1.5] so all-low speedup plots look sensible
+        ylo, yhi = ax.get_ylim()
+        ax.set_ylim(min(ylo, 0.5), max(yhi, 1.5))
+
         ax.set_xlabel('Number of Routers (V)', fontsize=12)
         ax.set_ylabel('Speedup vs Shortest Path', fontsize=12)
-        ax.set_title(f'{topo_name} Network: Performance Speedup vs Network Size', 
+        ax.set_title(f'{topo_name} ({traffic_pattern}): Performance Speedup vs Network Size', 
                      fontsize=14, fontweight='bold')
         ax.legend(fontsize=11)
         ax.grid(True, alpha=0.3)
@@ -202,7 +148,7 @@ def plot_runtime_scaling(df: pd.DataFrame, routing_methods: list, topo_name: str
     
     ax.set_xlabel('Number of Routers (V)', fontsize=12)
     ax.set_ylabel('Simulation Runtime (seconds)', fontsize=12)
-    ax.set_title(f'{topo_name} Network: Runtime Scaling with Network Size', 
+    ax.set_title(f'{topo_name} ({traffic_pattern}): Runtime Scaling with Network Size', 
                  fontsize=14, fontweight='bold')
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3)
@@ -262,6 +208,9 @@ def plot_combined_comparison(df: pd.DataFrame, routing_methods: list, topo_name:
     
     ax2.axhline(y=1.0, color='blue', linestyle='--', linewidth=1.5, 
                label='Baseline', alpha=0.7)
+    # Ensure y-axis spans at least [0.5, 1.5] so all-low speedup plots look sensible
+    ylo, yhi = ax2.get_ylim()
+    ax2.set_ylim(min(ylo, 0.5), max(yhi, 1.5))
     ax2.set_xlabel('Number of Routers (V)', fontsize=11)
     ax2.set_ylabel('Speedup vs Shortest Path', fontsize=11)
     ax2.set_title('(b) Performance Speedup', fontsize=12, fontweight='bold')
@@ -308,7 +257,7 @@ def plot_combined_comparison(df: pd.DataFrame, routing_methods: list, topo_name:
     ax4.legend(fontsize=9)
     ax4.grid(True, alpha=0.3)
     
-    plt.suptitle(f'{topo_name} Network Scaling Analysis', fontsize=16, fontweight='bold', y=0.995)
+    plt.suptitle(f'{topo_name} ({traffic_pattern}) Network Scaling Analysis', fontsize=16, fontweight='bold', y=0.995)
     plt.tight_layout()
     
     output_file = output_dir / f'scaling_combined_{topo_name}_{traffic_pattern}.png'
@@ -391,19 +340,11 @@ def main():
         print(f"Output directory: {output_dir}")
         print(f"Detected traffic pattern: {traffic_pattern}")
 
-        # Filter out V values (network sizes) that have incomplete data across methods
-        filtered_df = filter_complete_configs(df, routing_methods)
-        removed = len(df['V'].unique()) - len(filtered_df['V'].unique())
-        if removed > 0:
-            print(f"Removed {removed} network size(s) with incomplete data; plotting {len(filtered_df['V'].unique())} sizes.")
-        else:
-            print(f"All {len(filtered_df['V'].unique())} network sizes have complete data; plotting all.")
-
-        # Generate plots using the filtered dataframe
-        plot_performance_scaling(filtered_df, routing_methods, topo_name, output_dir, traffic_pattern)
-        plot_speedup_scaling(filtered_df, routing_methods, topo_name, output_dir, traffic_pattern)
-        plot_runtime_scaling(filtered_df, routing_methods, topo_name, output_dir, traffic_pattern)
-        plot_combined_comparison(filtered_df, routing_methods, topo_name, output_dir, traffic_pattern)
+        # Generate plots
+        plot_performance_scaling(df, routing_methods, topo_name, output_dir, traffic_pattern)
+        plot_speedup_scaling(df, routing_methods, topo_name, output_dir, traffic_pattern)
+        plot_runtime_scaling(df, routing_methods, topo_name, output_dir, traffic_pattern)
+        plot_combined_comparison(df, routing_methods, topo_name, output_dir, traffic_pattern)
 
     print("\n✓ All requested plots generated!")
     return exit_code

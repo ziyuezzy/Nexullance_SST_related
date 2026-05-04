@@ -1,0 +1,15 @@
+{
+  "topo_name": "Polarfly",
+  "traffic_pattern": "uniform",
+  "load": 0.8,
+  "link_bw": 16,
+  "num_threads": 6,
+  "max_routers": 1000,
+  "routing_methods": [
+    "shortest_path",
+    "ugal",
+    "nexullance"
+  ],
+  "num_configs": 13,
+  "timestamp": "20260312_212500"
+}
